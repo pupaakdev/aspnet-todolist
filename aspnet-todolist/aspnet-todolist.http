@@ -4,3 +4,29 @@
 GET {{aspnet_todolist_HostAddress}}
 
 ###
+GET {{aspnet_todolist_HostAddress}}/todolist
+
+###
+GET {{aspnet_todolist_HostAddress}}/todolist/complete
+
+###
+GET {{aspnet_todolist_HostAddress}}/todolist/1
+
+###
+POST {{aspnet_todolist_HostAddress}}/todolist
+Content-Type: application/json
+{
+  "name":"task 1",
+  "isComplete":false
+}
+
+###
+POST {{aspnet_todolist_HostAddress}}/todolist
+Content-Type: application/json
+{
+  "name":"task 2",
+  "isComplete":false
+}
+
+###
+PUT {{aspnet_todolist_HostAddress}}/todolist/1/complete
