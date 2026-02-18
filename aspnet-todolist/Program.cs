@@ -1,4 +1,3 @@
-
 namespace aspnet_todolist
 {
     public class Program
@@ -7,6 +6,8 @@ namespace aspnet_todolist
         {
             var builder = WebApplication.CreateBuilder(args);
             var app = builder.Build();
+
+            app.MapGet("/", () => "Hello world!");
 
             app.Run();
         }
