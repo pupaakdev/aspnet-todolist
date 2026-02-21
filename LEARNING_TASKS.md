@@ -16,7 +16,44 @@ You've built a simple Todo API with:
 
 ---
 
-## Task 1: Add Swagger/OpenAPI Documentation
+## Task 1: Update Endpoints to Follow REST Conventions
+
+**Goal:** Learn RESTful API design principles and update your endpoints to follow standard conventions.
+
+**Why it matters:** REST is the most common API architecture style. Following REST conventions makes your API predictable and easier for other developers to use.
+
+### Steps:
+
+1. Rename the base route from `/todolist` to `/api/todos` (plural noun, with api prefix)
+2. Ensure your endpoints follow REST conventions:
+   - `GET /api/todos` - Get all todos
+   - `GET /api/todos/{id}` - Get a single todo
+   - `POST /api/todos` - Create a new todo
+   - `PUT /api/todos/{id}` - Update a todo (full update)
+   - `DELETE /api/todos/{id}` - Delete a todo
+3. Use proper HTTP status codes:
+   - `200 OK` for successful GET/PUT
+   - `201 Created` for successful POST (with Location header)
+   - `204 No Content` for successful DELETE
+   - `404 Not Found` when resource doesn't exist
+4. Remove the `/todolist/complete` endpoint (filtering should use query parameters instead)
+
+### Hints:
+
+- Search for "REST API naming conventions"
+- Search for "REST API best practices"
+- Resources should be nouns (todos), not verbs (getTodos)
+- Use query parameters for filtering: `GET /api/todos?completed=true`
+
+### Learn:
+
+- What does REST stand for?
+- What are the 6 REST constraints?
+- What is the difference between PUT and PATCH?
+
+---
+
+## Task 2: Add Swagger/OpenAPI Documentation
 
 **Goal:** Learn how to document your API and use Swagger UI for testing.
 
@@ -41,192 +78,7 @@ You've built a simple Todo API with:
 
 ---
 
-## Task 2: Add Input Validation
-
-**Goal:** Learn how to validate user input before saving to the database.
-
-**Why it matters:** Never trust user input! Validation prevents bad data and security issues.
-
-### Steps:
-
-1. Add Data Annotations to the `Todo` model (e.g., `[Required]`, `[StringLength]`)
-2. Create a validation filter or use `MiniValidator` package
-3. Return proper `400 Bad Request` responses with validation errors
-
-### Validation Requirements for Todo:
-
-| Property     | Rules                                                 |
-| ------------ | ----------------------------------------------------- |
-| `Name`       | Required, minimum 1 character, maximum 100 characters |
-| `IsComplete` | No validation needed (boolean defaults to false)      |
-
-### Hints:
-
-- Search for "System.ComponentModel.DataAnnotations"
-- Look into attributes like `[Required]`, `[StringLength]`, `[Range]`
-
-### Bonus:
-
-- Create a custom validation attribute (e.g., `NoProfanityAttribute`)
-- Learn about FluentValidation as an alternative
-
----
-
-## Task 3: Add a DELETE Endpoint
-
-**Goal:** Complete the CRUD operations by adding delete functionality.
-
-**Why it matters:** Most APIs need all CRUD operations (Create, Read, Update, Delete).
-
-### Steps:
-
-1. Add a new endpoint: `DELETE /todolist/{id}`
-2. Find the todo by ID
-3. Return `404 Not Found` if it doesn't exist
-4. Delete the todo and save changes
-5. Return `204 No Content` on success
-
-### Bonus:
-
-- Add a "soft delete" option using an `IsDeleted` property instead of actually removing the record
-
----
-
-## Task 4: Add an UPDATE Endpoint
-
-**Goal:** Allow users to update the entire todo item, not just mark it complete.
-
-### Steps:
-
-1. Add: `PUT /todolist/{id}` that accepts a `Todo` in the body
-2. Validate the input
-3. Update all properties (Name, IsComplete)
-4. Return the updated todo
-
-### Consider:
-
-- What if the ID in the URL doesn't match the ID in the body?
-- Should you use PUT or PATCH? Research the difference!
-
----
-
-## Task 5: Add Filtering, Sorting, and Pagination
-
-**Goal:** Learn to handle large datasets efficiently.
-
-**Why it matters:** Real APIs often return thousands of records. Returning everything at once is slow and wasteful. Filtering, sorting, and pagination are essential for performance and usability.
-
-### Steps:
-
-1. Add query parameters to `GET /todolist`:
-   - `?completed=true` - filter by completion status
-   - `?search=grocery` - search by name
-   - `?sortBy=name&sortOrder=asc` - sorting
-   - `?page=1&pageSize=10` - pagination
-2. Create a `PagedResult<T>` class/record to return items with pagination metadata
-
-### Hints:
-
-- Use LINQ methods: `.Where()`, `.OrderBy()`, `.Skip()`, `.Take()`
-- Search for "ASP.NET Core pagination"
-- Think about: what metadata does the client need? (total count, current page, page size, total pages)
-
----
-
-## Task 6: Switch to a Real Database (SQLite)
-
-**Goal:** Learn to use a persistent database instead of in-memory.
-
-**Why it matters:** In-memory databases are great for testing, but real applications need data that persists between restarts. This also introduces you to EF Core migrations.
-
-### Steps:
-
-1. Install the `dotnet-ef` tool globally
-2. Add the required NuGet packages: `Microsoft.EntityFrameworkCore.Sqlite` and `Microsoft.EntityFrameworkCore.Design`
-3. Add a connection string in `appsettings.json`
-4. Update `Program.cs` to use SQLite instead of InMemory
-5. Create and apply your first migration using the EF Core CLI
-
-### Hints:
-
-- Search for "EF Core SQLite getting started"
-- Look up "EF Core migrations" in the official docs
-- The connection string format for SQLite is simple: `Data Source=filename.db`
-
-### Learn:
-
-- What is a migration? Why do we need them?
-- Explore the `Migrations` folder that gets created
-- What happens if you change your model and run a new migration?
-
----
-
-## Task 7: Create a Category Model (EF Core Relationships)
-
-**Goal:** Learn Entity Framework Core relationships by adding categories to todos.
-
-**Why it matters:** Real applications have related data. Understanding relationships is crucial.
-
-### Steps:
-
-1. Create a new model `Category.cs` with properties: `Id`, `Name`, `Color`, and a navigation property for Todos
-2. Add a foreign key (`CategoryId`) and navigation property (`Category`) to `Todo`
-3. Add `DbSet<Category>` to `TodoDb`
-4. Create a new migration and update the database
-5. Create CRUD endpoints for categories
-6. Update the todo endpoints to include category information
-
-### Validation Requirements for Category:
-
-| Property | Rules                                                                |
-| -------- | -------------------------------------------------------------------- |
-| `Name`   | Required, minimum 1 character, maximum 50 characters, must be unique |
-| `Color`  | Required, must be a valid hex color code (e.g., `#FF5733` or `#FFF`) |
-
-### Hints:
-
-- Search for "EF Core one-to-many relationship"
-- Look up "navigation properties" in EF Core docs
-- Research the difference between required and optional relationships (nullable foreign key)
-
-### Bonus:
-
-- Use `.Include()` to eager-load categories with todos
-- Create an endpoint to get all todos in a specific category
-
----
-
-## Task 8: Generate Seed Data
-
-**Goal:** Learn how to populate your database with fake data for testing and development.
-
-**Why it matters:** Testing your API with realistic data is essential. You need more than 2-3 manually created records to properly test filtering, sorting, and pagination.
-
-### Steps:
-
-1. Install the `Bogus` NuGet package (a popular fake data generator)
-2. Create a `DataSeeder` class that generates fake todos and categories
-3. Generate at least 500 todos across multiple categories with varied:
-   - Names (realistic task descriptions)
-   - Completion status (mix of complete and incomplete)
-   - Categories (randomly assigned)
-4. Call the seeder when the application starts (only if the database is empty)
-
-### Hints:
-
-- Search for "Bogus C# fake data"
-- Look at the Bogus GitHub page for examples
-- Use `context.Database.EnsureCreated()` or check `!context.Todos.Any()` before seeding
-- Consider creating a separate seeding method for development vs production
-
-### Bonus:
-
-- Create a `/seed` endpoint (development only) to reset and reseed the database
-- Use `Faker<T>` rules to generate consistent, realistic data
-
----
-
-## Task 9: Add Error Handling
+## Task 3: Add Error Handling
 
 **Goal:** Learn proper error handling and consistent error responses.
 
@@ -254,7 +106,199 @@ You've built a simple Todo API with:
 
 ---
 
-## Task 10: Use DTOs and Create a Service Layer
+## Task 4: Add Input Validation
+
+**Goal:** Learn how to validate user input before saving to the database.
+
+**Why it matters:** Never trust user input! Validation prevents bad data and security issues.
+
+### Steps:
+
+1. Add Data Annotations to the `Todo` model (e.g., `[Required]`, `[StringLength]`)
+2. Create a validation filter or use `MiniValidator` package
+3. Return proper `400 Bad Request` responses with validation errors
+
+### Validation Requirements for Todo:
+
+| Property     | Rules                                                 |
+| ------------ | ----------------------------------------------------- |
+| `Name`       | Required, minimum 1 character, maximum 100 characters |
+| `IsComplete` | No validation needed (boolean defaults to false)      |
+
+### Hints:
+
+- Search for "System.ComponentModel.DataAnnotations"
+- Look into attributes like `[Required]`, `[StringLength]`, `[Range]`
+- For unique validation (used later in Category): throw an exception if the value is not unique - the global exception handler will catch it
+
+### Bonus:
+
+- Create a custom validation attribute (e.g., `NoProfanityAttribute`)
+- Learn about FluentValidation as an alternative
+
+---
+
+## Task 5: Add a DELETE Endpoint
+
+**Goal:** Complete the CRUD operations by adding delete functionality.
+
+**Why it matters:** Most APIs need all CRUD operations (Create, Read, Update, Delete).
+
+### Steps:
+
+1. Add a new endpoint: `DELETE /todolist/{id}`
+2. Find the todo by ID
+3. Return `404 Not Found` if it doesn't exist
+4. Delete the todo and save changes
+5. Return `204 No Content` on success
+
+### Bonus:
+
+- Add a "soft delete" option using an `IsDeleted` property instead of actually removing the record
+
+---
+
+## Task 6: Fix the UPDATE Endpoint
+
+**Goal:** Update the existing PUT endpoint to properly update the entire todo item, not just mark it complete.
+
+**Why it matters:** The current `/todolist/{id}/complete` endpoint only marks a todo as complete. A proper REST API should have a PUT endpoint that updates all properties.
+
+### Steps:
+
+1. Replace the existing `PUT /todolist/{id}/complete` with `PUT /api/todos/{id}`
+2. Accept a todo object in the request body
+3. Validate the input
+4. Update all properties (Name, IsComplete)
+5. Return the updated todo
+
+### Consider:
+
+- What if the ID in the URL doesn't match the ID in the body?
+- Should you use PUT or PATCH? Research the difference!
+
+---
+
+## Task 7: Add Filtering, Sorting, and Pagination
+
+**Goal:** Learn to handle large datasets efficiently.
+
+**Why it matters:** Real APIs often return thousands of records. Returning everything at once is slow and wasteful. Filtering, sorting, and pagination are essential for performance and usability.
+
+### Steps:
+
+1. Add query parameters to `GET /todolist`:
+   - `?completed=true` - filter by completion status
+   - `?search=grocery` - search by name
+   - `?sortBy=name&sortOrder=asc` - sorting
+   - `?page=1&pageSize=10` - pagination
+2. Create a `PagedResult<T>` class/record to return items with pagination metadata
+
+### Hints:
+
+- Use LINQ methods: `.Where()`, `.OrderBy()`, `.Skip()`, `.Take()`
+- Search for "ASP.NET Core pagination"
+- Think about: what metadata does the client need? (total count, current page, page size, total pages)
+
+---
+
+## Task 8: Switch to a Real Database (SQLite)
+
+**Goal:** Learn to use a persistent database instead of in-memory.
+
+**Why it matters:** In-memory databases are great for testing, but real applications need data that persists between restarts. This also introduces you to EF Core migrations.
+
+### Steps:
+
+1. Install the `dotnet-ef` tool globally
+2. Add the required NuGet packages: `Microsoft.EntityFrameworkCore.Sqlite` and `Microsoft.EntityFrameworkCore.Design`
+3. Add a connection string in `appsettings.json`
+4. Update `Program.cs` to use SQLite instead of InMemory
+5. Create and apply your first migration using the EF Core CLI
+
+### Hints:
+
+- Search for "EF Core SQLite getting started"
+- Look up "EF Core migrations" in the official docs
+- The connection string format for SQLite is simple: `Data Source=filename.db`
+
+### Learn:
+
+- What is a migration? Why do we need them?
+- Explore the `Migrations` folder that gets created
+- What happens if you change your model and run a new migration?
+
+---
+
+## Task 9: Create a Category Model (EF Core Relationships)
+
+**Goal:** Learn Entity Framework Core relationships by adding categories to todos.
+
+**Why it matters:** Real applications have related data. Understanding relationships is crucial.
+
+### Steps:
+
+1. Create a new model `Category.cs` with properties: `Id`, `Name`, `Color`, and a navigation property for Todos
+2. Add a foreign key (`CategoryId`) and navigation property (`Category`) to `Todo`
+3. Add `DbSet<Category>` to `TodoDb`
+4. Create a new migration and update the database
+5. Create CRUD endpoints for categories
+6. Update the todo endpoints to include category information
+
+### Validation Requirements for Category:
+
+| Property | Rules                                                                |
+| -------- | -------------------------------------------------------------------- |
+| `Name`   | Required, minimum 1 character, maximum 50 characters, must be unique |
+| `Color`  | Required, must be a valid hex color code (e.g., `#FF5733` or `#FFF`) |
+
+**Important:** For the unique `Name` validation, check in your service/endpoint if a category with the same name already exists. If it does, throw a custom exception (e.g., `DuplicateCategoryException`). The global exception handler you created in Task 3 will catch this and return a proper error response.
+
+### Hints:
+
+- Search for "EF Core one-to-many relationship"
+- Look up "navigation properties" in EF Core docs
+- Research the difference between required and optional relationships (nullable foreign key)
+
+### Bonus:
+
+- Use `.Include()` to eager-load categories with todos
+- Create an endpoint to get all todos in a specific category
+
+---
+
+## Task 10: Generate Seed Data
+
+**Goal:** Learn how to populate your database with fake data for testing and development.
+
+**Why it matters:** Testing your API with realistic data is essential. You need more than 2-3 manually created records to properly test filtering, sorting, and pagination.
+
+### Steps:
+
+1. Install the `Bogus` NuGet package (a popular fake data generator)
+2. Create a `DataSeeder` class that generates fake todos and categories
+3. Generate at least 500 todos across multiple categories with varied:
+   - Names (realistic task descriptions)
+   - Completion status (mix of complete and incomplete)
+   - Categories (randomly assigned)
+4. Call the seeder when the application starts (only if the database is empty)
+
+### Hints:
+
+- Search for "Bogus C# fake data"
+- Look at the Bogus GitHub page for examples
+- Check `!context.Todos.Any()` before seeding to avoid duplicates
+- Do NOT use `context.Database.EnsureCreated()` - it doesn't work with migrations! Use migrations instead.
+- Consider creating a separate seeding method for development vs production
+
+### Bonus:
+
+- Create a `/seed` endpoint (development only) to reset and reseed the database
+- Use `Faker<T>` rules to generate consistent, realistic data
+
+---
+
+## Task 11: Use DTOs and Create a Service Layer
 
 **Goal:** Learn to separate your API contracts from your database models, and organize your code with a proper business logic layer.
 
@@ -283,7 +327,7 @@ You've built a simple Todo API with:
 
 ---
 
-## Task 11: Implement the Result Pattern
+## Task 12: Implement the Result Pattern
 
 **Goal:** Learn how to handle errors gracefully in your service layer without throwing exceptions.
 
@@ -324,7 +368,7 @@ You've built a simple Todo API with:
 
 ---
 
-## Task 12: Add Unit Tests
+## Task 13: Add Unit Tests
 
 **Goal:** Learn how to write unit tests for your service layer.
 
@@ -356,7 +400,7 @@ You've built a simple Todo API with:
 
 ---
 
-## Task 13: Refactor to Use Controllers
+## Task 14: Refactor to Use Controllers
 
 **Goal:** Learn the traditional controller-based approach.
 
@@ -369,10 +413,15 @@ You've built a simple Todo API with:
 3. Move your endpoint logic to controller actions
 4. Add `builder.Services.AddControllers()` and `app.MapControllers()`
 5. Use attributes: `[ApiController]`, `[Route("api/[controller]")]`, `[HttpGet]`, etc.
+6. **Remove all the minimal API endpoints** from `Program.cs` - don't keep both approaches running simultaneously
+
+### Important:
+
+Your `Program.cs` should be much cleaner after this refactoring. All the `app.MapGet()`, `app.MapPost()`, `app.MapPut()`, `app.MapDelete()` calls should be removed and replaced with controller actions.
 
 ---
 
-## Task 14: Create Custom Middleware
+## Task 15: Create Custom Middleware
 
 **Goal:** Understand the ASP.NET Core request pipeline and how middleware works.
 
@@ -412,27 +461,39 @@ You've built a simple Todo API with:
 
 ---
 
-## Task 15: Add Due Dates and Priority
+## Task 16: Add Due Dates and Priority
 
-**Goal:** Extend the model with more realistic properties.
+**Goal:** Extend the model with more realistic properties and learn about proper time abstraction for testability.
 
 ### Steps:
 
 1. Add `DueDate` (nullable DateTime) and `Priority` properties to `Todo`
 2. Create a `Priority` enum with values like Low, Medium, High, Urgent
 3. Create a new migration and update the database
-4. Add an endpoint to get overdue todos
-5. Add an endpoint to get todos due today
+4. Create an `ITimeProvider` interface with a method like `DateTime GetCurrentTime()`
+5. Create a `TimeProvider` implementation that returns `DateTime.UtcNow`
+6. Register `ITimeProvider` in dependency injection
+7. Inject `ITimeProvider` into your service instead of using `DateTime.Now` directly
+8. Add an endpoint to get overdue todos
+9. Add an endpoint to get todos due today
+10. Write unit tests for the overdue/due today logic by mocking `ITimeProvider`
 
 ### Hints:
 
 - Search for "C# enum"
-- Use `DateTime.Now` or `DateTime.UtcNow` for comparisons
+- Search for "testing DateTime in C#" or "time abstraction pattern"
 - Think about: how do you query "overdue" items? What about "due today"?
+- In tests, mock `ITimeProvider` to return a fixed date so your tests are deterministic
+
+### Learn:
+
+- Why is using `DateTime.Now` directly a problem for testing?
+- How does dependency injection help with testability?
+- Note: .NET 8+ has a built-in `TimeProvider` class - research it!
 
 ---
 
-## Task 16: Add Integration Tests
+## Task 17: Add Integration Tests
 
 **Goal:** Learn how to test your API endpoints end-to-end.
 
