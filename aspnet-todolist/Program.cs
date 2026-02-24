@@ -43,9 +43,15 @@ namespace aspnet_todolist
             /// <param name="isComplete">Optional filter to get only completed or incomplete todos.</param>
             /// <returns>A list of todo items.</returns>
             /// <response code="200">Returns the list of todo items.</response>
-            app.MapGet("/api/todos", async (TodoDb db, bool? isComplete) =>
+            app.MapGet("/api/todos", async (TodoDb db, bool? isComplete, bool? isDeleted, bool showDeleted = false) =>
             {
                 var query = db.Todos.AsQueryable();
+
+                if (!showDeleted && !isDeleted.HasValue)
+                    query = query.Where(t => t.IsDeleted == false);
+
+                if (isDeleted.HasValue)
+                    query = query.Where(t => t.IsDeleted == isDeleted.Value);
 
                 if (isComplete.HasValue)
                     query = query.Where(t => t.IsComplete == isComplete.Value);
@@ -67,6 +73,7 @@ namespace aspnet_todolist
             {
                 var todo = await db.Todos.FindAsync(id);
                 if (todo == null) return Results.NotFound();
+                if (todo.IsDeleted == true) return Results.NotFound();
 
                 return Results.Ok(todo);
             })
@@ -104,6 +111,7 @@ namespace aspnet_todolist
                 var todo = await db.Todos.FindAsync(id);
 
                 if (todo == null) return Results.NotFound();
+                if (todo.IsDeleted == true) return Results.NotFound();
 
                 todo.Name = inputTodo.Name;
                 todo.IsComplete = inputTodo.IsComplete;
@@ -122,15 +130,19 @@ namespace aspnet_todolist
             /// <returns>No content.</returns>
             /// <response code="204">If the todo item was successfully deleted.</response>
             /// <response code="404">If the todo item is not found.</response>
-            app.MapDelete("/api/todos/{id}", async (int id, TodoDb db) =>
+            app.MapDelete("/api/todos/{id}", async (int id, TodoDb db, bool hardDelete = false) =>
             {
                 var todo = await db.Todos.FindAsync(id);
 
                 if (todo == null) return Results.NotFound();
+                if (todo.IsDeleted == true && !hardDelete) return Results.NotFound();
 
-                db.Todos.Remove(todo);
+                if (hardDelete)
+                    db.Todos.Remove(todo);
+                else
+                    todo.IsDeleted = true;
+
                 await db.SaveChangesAsync();
-
                 return Results.NoContent();
             })
             .WithTags("Todos")
