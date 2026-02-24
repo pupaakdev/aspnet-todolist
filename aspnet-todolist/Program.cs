@@ -13,6 +13,12 @@ namespace aspnet_todolist
             builder.Services.AddProblemDetails();
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
+            builder.Services.AddHttpLogging(logging =>
+            {
+                logging.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.RequestPropertiesAndHeaders |
+                                       Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.ResponsePropertiesAndHeaders;
+            });
+
             builder.Services.AddDbContext<TodoDb>(opt => opt.UseInMemoryDatabase("TodoList"));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
@@ -20,6 +26,7 @@ namespace aspnet_todolist
 
             var app = builder.Build();
 
+            app.UseHttpLogging();
             app.UseExceptionHandler();
 
             app.MapOpenApi();
