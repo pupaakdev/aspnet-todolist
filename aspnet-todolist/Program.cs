@@ -10,7 +10,15 @@ namespace aspnet_todolist
             var builder = WebApplication.CreateBuilder(args);
             builder.Services.AddDbContext<TodoDb>(opt => opt.UseInMemoryDatabase("TodoList"));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+            builder.Services.AddOpenApi();
             var app = builder.Build();
+
+            app.MapOpenApi();
+            app.UseSwaggerUI(options =>
+            {
+                options.SwaggerEndpoint("/openapi/v1.json", "v1");
+                options.RoutePrefix = "swagger";
+            });
 
             app.MapGet("/api/todos", async (TodoDb db, bool? isComplete) =>
             {
