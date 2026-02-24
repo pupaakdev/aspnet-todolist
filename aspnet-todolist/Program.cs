@@ -12,16 +12,9 @@ namespace aspnet_todolist
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
             var app = builder.Build();
 
-            app.MapGet("/", () => "Hello world!");
-
             app.MapGet("/todolist", async (TodoDb db) =>
             {
                 return await db.Todos.ToListAsync();
-            });
-
-            app.MapGet("/todolist/complete", async (TodoDb db) =>
-            {
-                return await db.Todos.Where(t => t.IsComplete).ToListAsync();
             });
 
             app.MapGet("/todolist/{id}", async (int id, TodoDb db) =>
