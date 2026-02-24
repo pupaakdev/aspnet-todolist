@@ -1,4 +1,6 @@
 ﻿using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 
 namespace aspnet_todolist.Exceptions
 {
@@ -6,18 +8,37 @@ namespace aspnet_todolist.Exceptions
     {
         public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
         {
-            logger.LogError(exception, "Unhandled exception occurred while processing the request.");
+            logger.LogError(exception, "Exception occurred: {ExceptionType}", exception.GetType().Name);
 
-            var statusCode = exception switch
+            var (statusCode, message) = exception switch
             {
-                _ => StatusCodes.Status500InternalServerError
+                ValidationException validationEx => 
+                    (StatusCodes.Status400BadRequest, "Validation failed."),
+
+                DbUpdateException dbUpdateEx => 
+                    (StatusCodes.Status409Conflict, "A database conflict occurred. The operation could not be completed."),
+
+                ArgumentException or ArgumentNullException => 
+                    (StatusCodes.Status400BadRequest, "Invalid argument provided."),
+
+                KeyNotFoundException => 
+                    (StatusCodes.Status404NotFound, "The requested resource was not found."),
+
+                UnauthorizedAccessException => 
+                    (StatusCodes.Status403Forbidden, "Access to this resource is forbidden."),
+
+                InvalidOperationException => 
+                    (StatusCodes.Status400BadRequest, "The requested operation is invalid."),
+
+                _ => 
+                    (StatusCodes.Status500InternalServerError, "An error occurred while processing your request.")
             };
 
             httpContext.Response.StatusCode = statusCode;
             httpContext.Response.ContentType = "application/json";
 
             var apiError = new ApiError(
-                message: "An error occurred while processing your request.",
+                message: message,
                 statusCode: statusCode,
                 details: exception.Message
             );
