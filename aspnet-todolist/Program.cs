@@ -10,6 +10,7 @@ namespace aspnet_todolist
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            builder.Services.AddProblemDetails();
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
             builder.Services.AddDbContext<TodoDb>(opt => opt.UseInMemoryDatabase("TodoList"));
