@@ -43,7 +43,7 @@ namespace aspnet_todolist
             /// <param name="isComplete">Optional filter to get only completed or incomplete todos.</param>
             /// <returns>A list of todo items.</returns>
             /// <response code="200">Returns the list of todo items.</response>
-            app.MapGet("/api/todos", async (TodoDb db, bool? isComplete, bool? isDeleted, bool showDeleted = false) =>
+            app.MapGet("/api/todos", async (TodoDb db, bool? isComplete, bool? isDeleted, bool showDeleted = false, string? sortBy = null, string sortOrder = "asc") =>
             {
                 var query = db.Todos.AsQueryable();
 
@@ -56,11 +56,24 @@ namespace aspnet_todolist
                 if (isComplete.HasValue)
                     query = query.Where(t => t.IsComplete == isComplete.Value);
 
+                if (!string.IsNullOrEmpty(sortBy))
+                {
+                    var isDescending = sortOrder.Equals("desc", StringComparison.OrdinalIgnoreCase);
+
+                    query = sortBy.ToLower() switch
+                    {
+                        "id" => isDescending ? query.OrderByDescending(t => t.Id) : query.OrderBy(t => t.Id),
+                        "name" => isDescending ? query.OrderByDescending(t => t.Name) : query.OrderBy(t => t.Name),
+                        "iscomplete" => isDescending ? query.OrderByDescending(t => t.IsComplete) : query.OrderBy(t => t.IsComplete),
+                        _ => query
+                    };
+                }
+
                 return Results.Ok(await query.ToListAsync());
             })
             .WithTags("Todos")
             .WithSummary("Retrieves all todo items")
-            .WithDescription("Gets a list of all todo items. Optionally filter by completion status using the isComplete query parameter.");
+            .WithDescription("Gets a list of all todo items. Optionally filter by completion status using the isComplete query parameter. Sort using sortBy (id, name, iscomplete, isdeleted) and sortOrder (asc, desc) parameters.");
 
             /// <summary>
             /// Retrieves a specific todo item by id.
