@@ -12,19 +12,17 @@ namespace aspnet_todolist
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
             var app = builder.Build();
 
-            app.MapGet("/", () => "Hello world!");
-
-            app.MapGet("/todolist", async (TodoDb db) =>
+            app.MapGet("/api/todos", async (TodoDb db, bool? isComplete) =>
             {
-                return await db.Todos.ToListAsync();
+                var query = db.Todos.AsQueryable();
+
+                if (isComplete.HasValue)
+                    query = query.Where(t => t.IsComplete == isComplete.Value);
+
+                return Results.Ok(await query.ToListAsync());
             });
 
-            app.MapGet("/todolist/complete", async (TodoDb db) =>
-            {
-                return await db.Todos.Where(t => t.IsComplete).ToListAsync();
-            });
-
-            app.MapGet("/todolist/{id}", async (int id, TodoDb db) =>
+            app.MapGet("/api/todos/{id}", async (int id, TodoDb db) =>
             {
                 var todo = await db.Todos.FindAsync(id);
                 if (todo == null) return Results.NotFound();
@@ -32,7 +30,7 @@ namespace aspnet_todolist
                 return Results.Ok(todo);
             });
 
-            app.MapPost("/todolist", async (Todo todo, TodoDb db) =>
+            app.MapPost("/api/todos", async (Todo todo, TodoDb db) =>
             {
                 db.Todos.Add(todo);
                 await db.SaveChangesAsync();
@@ -40,16 +38,29 @@ namespace aspnet_todolist
                 return Results.Created($"/todolist/{todo.Id}", todo);
             });
 
-            app.MapPut("/todolist/{id}/complete", async (int id, TodoDb db) =>
+            app.MapPut("/api/todos/{id}", async (int id, Todo inputTodo, TodoDb db) =>
             {
                 var todo = await db.Todos.FindAsync(id);
 
                 if (todo == null) return Results.NotFound();
 
-                todo.IsComplete = true;
+                todo.Name = inputTodo.Name;
+                todo.IsComplete = inputTodo.IsComplete;
                 await db.SaveChangesAsync();
 
-                return Results.Ok();
+                return Results.Ok(todo);
+            });
+
+            app.MapDelete("/api/todos/{id}", async (int id, TodoDb db) =>
+            {
+                var todo = await db.Todos.FindAsync(id);
+
+                if (todo == null) return Results.NotFound();
+                
+                db.Todos.Remove(todo);
+                await db.SaveChangesAsync();
+                
+                return Results.NoContent();
             });
 
             app.Run();
