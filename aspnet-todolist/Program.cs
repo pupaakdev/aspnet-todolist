@@ -23,6 +23,7 @@ namespace aspnet_todolist
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
             builder.Services.AddOpenApi();
+            builder.Services.AddValidation();
 
             var app = builder.Build();
 
