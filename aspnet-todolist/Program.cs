@@ -28,7 +28,7 @@ namespace aspnet_todolist
                     query = query.Where(t => t.IsComplete == isComplete.Value);
 
                 return Results.Ok(await query.ToListAsync());
-            });
+            }).WithTags("Todos");
 
             app.MapGet("/api/todos/{id}", async (int id, TodoDb db) =>
             {
@@ -36,7 +36,7 @@ namespace aspnet_todolist
                 if (todo == null) return Results.NotFound();
 
                 return Results.Ok(todo);
-            });
+            }).WithTags("Todos");
 
             app.MapPost("/api/todos", async (Todo todo, TodoDb db) =>
             {
@@ -44,7 +44,7 @@ namespace aspnet_todolist
                 await db.SaveChangesAsync();
 
                 return Results.Created($"/todolist/{todo.Id}", todo);
-            });
+            }).WithTags("Todos");
 
             app.MapPut("/api/todos/{id}", async (int id, Todo inputTodo, TodoDb db) =>
             {
@@ -57,19 +57,19 @@ namespace aspnet_todolist
                 await db.SaveChangesAsync();
 
                 return Results.Ok(todo);
-            });
+            }).WithTags("Todos");
 
             app.MapDelete("/api/todos/{id}", async (int id, TodoDb db) =>
             {
                 var todo = await db.Todos.FindAsync(id);
 
                 if (todo == null) return Results.NotFound();
-                
+
                 db.Todos.Remove(todo);
                 await db.SaveChangesAsync();
-                
+
                 return Results.NoContent();
-            });
+            }).WithTags("Todos");
 
             app.Run();
         }
