@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using aspnet_todolist.Models;
+using aspnet_todolist.Exceptions;
 
 namespace aspnet_todolist
 {
@@ -8,10 +9,25 @@ namespace aspnet_todolist
         public static void Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+
+            builder.Services.AddProblemDetails();
+            builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+
+            builder.Services.AddHttpLogging(logging =>
+            {
+                logging.LoggingFields = Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.RequestPropertiesAndHeaders |
+                                       Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.ResponsePropertiesAndHeaders;
+            });
+
             builder.Services.AddDbContext<TodoDb>(opt => opt.UseInMemoryDatabase("TodoList"));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
+
             builder.Services.AddOpenApi();
+
             var app = builder.Build();
+
+            app.UseHttpLogging();
+            app.UseExceptionHandler();
 
             app.MapOpenApi();
             app.UseSwaggerUI(options =>
