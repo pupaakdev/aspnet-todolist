@@ -11,5 +11,7 @@ namespace aspnet_todolist.Models
         public string? Name { get; set; }
 
         public bool IsComplete { get; set; }
+
+        public bool IsDeleted { get; set; }
     }
 }
