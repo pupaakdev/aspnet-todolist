@@ -19,13 +19,20 @@ namespace aspnet_todolist
                                        Microsoft.AspNetCore.HttpLogging.HttpLoggingFields.ResponsePropertiesAndHeaders;
             });
 
-            builder.Services.AddDbContext<TodoDb>(opt => opt.UseInMemoryDatabase("TodoList"));
+            builder.Services.AddDbContext<TodoDb>(opt => 
+                opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
             builder.Services.AddOpenApi();
             builder.Services.AddValidation();
 
             var app = builder.Build();
+
+            using (var scope = app.Services.CreateScope())
+            {
+                var db = scope.ServiceProvider.GetRequiredService<TodoDb>();
+                db.Database.Migrate();
+            }
 
             app.UseHttpLogging();
             app.UseExceptionHandler();
