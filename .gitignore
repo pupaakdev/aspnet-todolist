@@ -416,6 +416,8 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
-/aspnet-todolist/todolist.db
-/aspnet-todolist/todolist.db-shm
-/aspnet-todolist/todolist.db-wal
+
+# Database files
+*.db
+*.db-shm
+*.db-wal

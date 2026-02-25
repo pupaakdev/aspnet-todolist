@@ -31,7 +31,7 @@ namespace aspnet_todolist
             using (var scope = app.Services.CreateScope())
             {
                 var db = scope.ServiceProvider.GetRequiredService<TodoDb>();
-                db.Database.EnsureCreated();
+                db.Database.Migrate();
             }
 
             app.UseHttpLogging();
