@@ -82,7 +82,18 @@ namespace aspnet_todolist
 
                 if (page.HasValue)
                 {
-                    query = query.Skip(((int)page - 1) * pageSize).Take(pageSize);
+                    var totalCount = await query.CountAsync();
+                    var items = await query.Skip(((int)page - 1) * pageSize).Take(pageSize).ToListAsync();
+
+                    var result = new PagedResult<Todo>
+                    {
+                        Items = items,
+                        TotalCount = totalCount,
+                        CurrentPage = (int)page,
+                        PageSize = pageSize
+                    };
+
+                    return Results.Ok(result);
                 }
 
                 return Results.Ok(await query.ToListAsync());
