@@ -43,7 +43,15 @@ namespace aspnet_todolist
             /// <param name="isComplete">Optional filter to get only completed or incomplete todos.</param>
             /// <returns>A list of todo items.</returns>
             /// <response code="200">Returns the list of todo items.</response>
-            app.MapGet("/api/todos", async (TodoDb db, bool? isComplete, bool? isDeleted, string ? search, string ? sortBy, bool showDeleted = false, string sortOrder = "asc") =>
+            app.MapGet("/api/todos", async (TodoDb db,
+                bool? isComplete,
+                bool? isDeleted,
+                string? search,
+                string? sortBy,
+                int? page,
+                int pageSize = 10,
+                bool showDeleted = false,
+                string sortOrder = "asc") =>
             {
                 var query = db.Todos.AsQueryable();
 
@@ -70,6 +78,11 @@ namespace aspnet_todolist
                         "complete" => isDescending ? query.OrderByDescending(t => t.IsComplete) : query.OrderBy(t => t.IsComplete),
                         _ => query
                     };
+                }
+
+                if (page.HasValue)
+                {
+                    query = query.Skip(((int)page - 1) * pageSize).Take(pageSize);
                 }
 
                 return Results.Ok(await query.ToListAsync());
