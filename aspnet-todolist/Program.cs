@@ -1,6 +1,8 @@
-using Microsoft.EntityFrameworkCore;
-using aspnet_todolist.Models;
 using aspnet_todolist.Exceptions;
+using aspnet_todolist.Models;
+using Microsoft.AspNetCore.Http.Features;
+using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace aspnet_todolist
 {
@@ -10,7 +12,14 @@ namespace aspnet_todolist
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.AddProblemDetails();
+            builder.Services.AddProblemDetails(options =>
+            {
+                options.CustomizeProblemDetails = context =>
+                {
+                    Activity? activity = context.HttpContext.Features.Get<IHttpActivityFeature>()?.Activity;
+                    context.ProblemDetails.Extensions.TryAdd("traceId", activity?.Id);
+                };
+            });
             builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 
             builder.Services.AddHttpLogging(logging =>
