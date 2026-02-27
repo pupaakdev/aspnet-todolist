@@ -60,7 +60,7 @@ namespace aspnet_todolist
                 bool showDeleted = false,
                 string sortOrder = "asc") =>
             {
-                var query = db.Todos.AsQueryable();
+                var query = db.Todos.Include(t => t.Category).AsQueryable();
 
                 if (!showDeleted && !isDeleted.HasValue)
                     query = query.Where(t => t.IsDeleted == false);
@@ -118,7 +118,7 @@ namespace aspnet_todolist
             /// <response code="404">If the todo item is not found.</response>
             app.MapGet("/api/todos/{id}", async (int id, TodoDb db) =>
             {
-                var todo = await db.Todos.FindAsync(id);
+                var todo = await db.Todos.Include(t => t.Category).FirstOrDefaultAsync(t => t.Id == id);
                 if (todo == null) return Results.NotFound();
                 if (todo.IsDeleted == true) return Results.NotFound();
 
@@ -134,10 +134,23 @@ namespace aspnet_todolist
             /// <param name="todo">The todo item to create.</param>
             /// <returns>The newly created todo item.</returns>
             /// <response code="201">Returns the newly created todo item.</response>
+            /// <response code="400">If the provided CategoryId does not exist.</response>
             app.MapPost("/api/todos", async (Todo todo, TodoDb db) =>
             {
+                if (todo.CategoryId.HasValue)
+                {
+                    var categoryExists = await db.Categories.AnyAsync(c => c.Id == todo.CategoryId.Value);
+                    if (!categoryExists)
+                        return Results.BadRequest("Category does not exist");
+                }
+
                 db.Todos.Add(todo);
                 await db.SaveChangesAsync();
+
+                if (todo.CategoryId.HasValue)
+                {
+                    await db.Entry(todo).Reference(t => t.Category).LoadAsync();
+                }
 
                 return Results.Created($"/todolist/{todo.Id}", todo);
             })
@@ -153,6 +166,7 @@ namespace aspnet_todolist
             /// <returns>The updated todo item.</returns>
             /// <response code="200">Returns the updated todo item.</response>
             /// <response code="404">If the todo item is not found.</response>
+            /// <response code="400">If the provided CategoryId does not exist.</response>
             app.MapPut("/api/todos/{id}", async (int id, Todo inputTodo, TodoDb db) =>
             {
                 var todo = await db.Todos.FindAsync(id);
@@ -160,9 +174,22 @@ namespace aspnet_todolist
                 if (todo == null) return Results.NotFound();
                 if (todo.IsDeleted == true) return Results.NotFound();
 
+                if (inputTodo.CategoryId.HasValue)
+                {
+                    var categoryExists = await db.Categories.AnyAsync(c => c.Id == inputTodo.CategoryId.Value);
+                    if (!categoryExists)
+                        return Results.BadRequest("Category does not exist");
+                }
+
                 todo.Name = inputTodo.Name;
                 todo.IsComplete = inputTodo.IsComplete;
+                todo.CategoryId = inputTodo.CategoryId;
                 await db.SaveChangesAsync();
+
+                if (todo.CategoryId.HasValue)
+                {
+                    await db.Entry(todo).Reference(t => t.Category).LoadAsync();
+                }
 
                 return Results.Ok(todo);
             })
@@ -195,6 +222,100 @@ namespace aspnet_todolist
             .WithTags("Todos")
             .WithSummary("Deletes a specific todo item")
             .WithDescription("Removes a todo item from the list by its unique identifier.");
+
+            /// <summary>
+            /// Retrieves all categories.
+            /// </summary>
+            /// <returns>A list of categories.</returns>
+            /// <response code="200">Returns the list of categories.</response>
+            app.MapGet("/api/categories", async (TodoDb db) =>
+            {
+                var categories = await db.Categories.ToListAsync();
+                return Results.Ok(categories);
+            })
+            .WithTags("Categories")
+            .WithSummary("Retrieves all categories")
+            .WithDescription("Gets a list of all categories.");
+
+            /// <summary>
+            /// Retrieves a specific category by id.
+            /// </summary>
+            /// <param name="id">The id of the category to retrieve.</param>
+            /// <returns>The category with the specified id.</returns>
+            /// <response code="200">Returns the category.</response>
+            /// <response code="404">If the category is not found.</response>
+            app.MapGet("/api/categories/{id}", async (int id, TodoDb db) =>
+            {
+                var category = await db.Categories.FindAsync(id);
+                if (category == null) return Results.NotFound();
+
+                return Results.Ok(category);
+            })
+            .WithTags("Categories")
+            .WithSummary("Retrieves a specific category")
+            .WithDescription("Gets a single category by its unique identifier.");
+
+            /// <summary>
+            /// Creates a new category.
+            /// </summary>
+            /// <param name="category">The category to create.</param>
+            /// <returns>The newly created category.</returns>
+            /// <response code="201">Returns the newly created category.</response>
+            app.MapPost("/api/categories", async (Category category, TodoDb db) =>
+            {
+                db.Categories.Add(category);
+                await db.SaveChangesAsync();
+
+                return Results.Created($"/api/categories/{category.Id}", category);
+            })
+            .WithTags("Categories")
+            .WithSummary("Creates a new category")
+            .WithDescription("Creates a new category and adds it to the list.");
+
+            /// <summary>
+            /// Updates an existing category.
+            /// </summary>
+            /// <param name="id">The id of the category to update.</param>
+            /// <param name="inputCategory">The updated category data.</param>
+            /// <returns>The updated category.</returns>
+            /// <response code="200">Returns the updated category.</response>
+            /// <response code="404">If the category is not found.</response>
+            app.MapPut("/api/categories/{id}", async (int id, Category inputCategory, TodoDb db) =>
+            {
+                var category = await db.Categories.FindAsync(id);
+
+                if (category == null) return Results.NotFound();
+
+                category.Name = inputCategory.Name;
+                category.Color = inputCategory.Color;
+                await db.SaveChangesAsync();
+
+                return Results.Ok(category);
+            })
+            .WithTags("Categories")
+            .WithSummary("Updates an existing category")
+            .WithDescription("Updates the name and color of an existing category.");
+
+            /// <summary>
+            /// Deletes a specific category.
+            /// </summary>
+            /// <param name="id">The id of the category to delete.</param>
+            /// <returns>No content.</returns>
+            /// <response code="204">If the category was successfully deleted.</response>
+            /// <response code="404">If the category is not found.</response>
+            app.MapDelete("/api/categories/{id}", async (int id, TodoDb db) =>
+            {
+                var category = await db.Categories.FindAsync(id);
+
+                if (category == null) return Results.NotFound();
+
+                db.Categories.Remove(category);
+                await db.SaveChangesAsync();
+                return Results.NoContent();
+            })
+            .WithTags("Categories")
+            .WithSummary("Deletes a specific category")
+            .WithDescription("Removes a category from the list by its unique identifier.");
 
             app.Run();
         }
