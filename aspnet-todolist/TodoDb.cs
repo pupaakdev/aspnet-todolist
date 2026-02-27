@@ -8,5 +8,7 @@ namespace aspnet_todolist
         public TodoDb(DbContextOptions<TodoDb> options) : base(options) { }
 
         public DbSet<Todo> Todos => Set<Todo>();
+
+        public DbSet<Category> Categories => Set<Category>();
     }
 }

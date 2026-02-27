@@ -13,5 +13,9 @@ namespace aspnet_todolist.Models
         public bool IsComplete { get; set; }
 
         public bool IsDeleted { get; set; }
+
+        public int? CategoryId { get; set; }
+
+        public Category? Category { get; set; }
     }
 }
