@@ -6,12 +6,16 @@ namespace aspnet_todolist.Models
     {
         public int Id { get; set; }
 
-        [Required(ErrorMessage = "Field Name is required")]
-        [MaxLength(100, ErrorMessage = "Name can't exceed 100 characters")]
+        [Required]
+        [MaxLength(100)]
         public string? Name { get; set; }
 
         public bool IsComplete { get; set; }
 
         public bool IsDeleted { get; set; }
+
+        public int? CategoryId { get; set; }
+
+        public Category? Category { get; set; }
     }
 }
