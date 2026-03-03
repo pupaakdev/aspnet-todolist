@@ -34,6 +34,7 @@ namespace aspnet_todolist
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
             builder.Services.AddTransient<DataSeeder>();
+            builder.Services.AddScoped<ITodoService, TodoService>();
 
             builder.Services.AddOpenApi();
             builder.Services.AddValidation();
@@ -62,7 +63,7 @@ namespace aspnet_todolist
             /// <param name="isComplete">Optional filter to get only completed or incomplete todos.</param>
             /// <returns>A list of todo items.</returns>
             /// <response code="200">Returns the list of todo items.</response>
-            app.MapGet("/api/todos", async (TodoDb db,
+            app.MapGet("/api/todos", async (ITodoService todoService,
                 bool? isComplete,
                 bool? isDeleted,
                 string? search,
@@ -72,50 +73,17 @@ namespace aspnet_todolist
                 bool showDeleted = false,
                 string sortOrder = "asc") =>
             {
-                var query = db.Todos.Include(t => t.Category).AsQueryable();
+                var result = await todoService.GetAllAsync(
+                    isComplete,
+                    isDeleted,
+                    search,
+                    sortBy,
+                    page,
+                    pageSize,
+                    showDeleted,
+                    sortOrder);
 
-                if (!showDeleted && !isDeleted.HasValue)
-                    query = query.Where(t => t.IsDeleted == false);
-
-                if (isDeleted.HasValue)
-                    query = query.Where(t => t.IsDeleted == isDeleted.Value);
-
-                if (isComplete.HasValue)
-                    query = query.Where(t => t.IsComplete == isComplete.Value);
-
-                if (!string.IsNullOrEmpty(search))
-                    query = query.Where(t => t.Name!.Contains(search));
-
-                if (!string.IsNullOrEmpty(sortBy))
-                {
-                    var isDescending = sortOrder.Equals("desc", StringComparison.OrdinalIgnoreCase);
-
-                    query = sortBy.ToLower() switch
-                    {
-                        "id" => isDescending ? query.OrderByDescending(t => t.Id) : query.OrderBy(t => t.Id),
-                        "name" => isDescending ? query.OrderByDescending(t => t.Name) : query.OrderBy(t => t.Name),
-                        "complete" => isDescending ? query.OrderByDescending(t => t.IsComplete) : query.OrderBy(t => t.IsComplete),
-                        _ => query
-                    };
-                }
-
-                if (page.HasValue)
-                {
-                    var totalCount = await query.CountAsync();
-                    var items = await query.Skip(((int)page - 1) * pageSize).Take(pageSize).ToListAsync();
-
-                    var result = new PagedResult<Todo>
-                    {
-                        Items = items,
-                        TotalCount = totalCount,
-                        CurrentPage = (int)page,
-                        PageSize = pageSize
-                    };
-
-                    return Results.Ok(result);
-                }
-
-                return Results.Ok(await query.ToListAsync());
+                return Results.Ok(result);
             })
             .WithTags("Todos")
             .WithSummary("Retrieves all todo items")
@@ -128,11 +96,10 @@ namespace aspnet_todolist
             /// <returns>The todo item with the specified id.</returns>
             /// <response code="200">Returns the todo item.</response>
             /// <response code="404">If the todo item is not found.</response>
-            app.MapGet("/api/todos/{id}", async (int id, TodoDb db) =>
+            app.MapGet("/api/todos/{id}", async (int id, ITodoService todoService) =>
             {
-                var todo = await db.Todos.Include(t => t.Category).FirstOrDefaultAsync(t => t.Id == id);
+                var todo = await todoService.GetByIdAsync(id);
                 if (todo == null) return Results.NotFound();
-                if (todo.IsDeleted == true) return Results.NotFound();
 
                 return Results.Ok(todo);
             })
@@ -147,24 +114,17 @@ namespace aspnet_todolist
             /// <returns>The newly created todo item.</returns>
             /// <response code="201">Returns the newly created todo item.</response>
             /// <response code="400">If the provided CategoryId does not exist.</response>
-            app.MapPost("/api/todos", async (Todo todo, TodoDb db) =>
+            app.MapPost("/api/todos", async (Todo todo, ITodoService todoService) =>
             {
-                if (todo.CategoryId.HasValue)
+                try
                 {
-                    var categoryExists = await db.Categories.AnyAsync(c => c.Id == todo.CategoryId.Value);
-                    if (!categoryExists)
-                        return Results.BadRequest("Category does not exist");
+                    var createdTodo = await todoService.CreateAsync(todo);
+                    return Results.Created($"/todolist/{createdTodo.Id}", createdTodo);
                 }
-
-                db.Todos.Add(todo);
-                await db.SaveChangesAsync();
-
-                if (todo.CategoryId.HasValue)
+                catch (ArgumentException ex)
                 {
-                    await db.Entry(todo).Reference(t => t.Category).LoadAsync();
+                    return Results.BadRequest(ex.Message);
                 }
-
-                return Results.Created($"/todolist/{todo.Id}", todo);
             })
             .WithTags("Todos")
             .WithSummary("Creates a new todo item")
@@ -179,31 +139,19 @@ namespace aspnet_todolist
             /// <response code="200">Returns the updated todo item.</response>
             /// <response code="404">If the todo item is not found.</response>
             /// <response code="400">If the provided CategoryId does not exist.</response>
-            app.MapPut("/api/todos/{id}", async (int id, Todo inputTodo, TodoDb db) =>
+            app.MapPut("/api/todos/{id}", async (int id, Todo inputTodo, ITodoService todoService) =>
             {
-                var todo = await db.Todos.FindAsync(id);
-
-                if (todo == null) return Results.NotFound();
-                if (todo.IsDeleted == true) return Results.NotFound();
-
-                if (inputTodo.CategoryId.HasValue)
+                try
                 {
-                    var categoryExists = await db.Categories.AnyAsync(c => c.Id == inputTodo.CategoryId.Value);
-                    if (!categoryExists)
-                        return Results.BadRequest("Category does not exist");
+                    var updatedTodo = await todoService.UpdateAsync(id, inputTodo);
+                    if (updatedTodo == null) return Results.NotFound();
+
+                    return Results.Ok(updatedTodo);
                 }
-
-                todo.Name = inputTodo.Name;
-                todo.IsComplete = inputTodo.IsComplete;
-                todo.CategoryId = inputTodo.CategoryId;
-                await db.SaveChangesAsync();
-
-                if (todo.CategoryId.HasValue)
+                catch (ArgumentException ex)
                 {
-                    await db.Entry(todo).Reference(t => t.Category).LoadAsync();
+                    return Results.BadRequest(ex.Message);
                 }
-
-                return Results.Ok(todo);
             })
             .WithTags("Todos")
             .WithSummary("Updates an existing todo item")
@@ -216,19 +164,11 @@ namespace aspnet_todolist
             /// <returns>No content.</returns>
             /// <response code="204">If the todo item was successfully deleted.</response>
             /// <response code="404">If the todo item is not found.</response>
-            app.MapDelete("/api/todos/{id}", async (int id, TodoDb db, bool hardDelete = false) =>
+            app.MapDelete("/api/todos/{id}", async (int id, ITodoService todoService, bool hardDelete = false) =>
             {
-                var todo = await db.Todos.FindAsync(id);
+                var success = await todoService.DeleteAsync(id, hardDelete);
+                if (!success) return Results.NotFound();
 
-                if (todo == null) return Results.NotFound();
-                if (todo.IsDeleted == true && !hardDelete) return Results.NotFound();
-
-                if (hardDelete)
-                    db.Todos.Remove(todo);
-                else
-                    todo.IsDeleted = true;
-
-                await db.SaveChangesAsync();
                 return Results.NoContent();
             })
             .WithTags("Todos")
