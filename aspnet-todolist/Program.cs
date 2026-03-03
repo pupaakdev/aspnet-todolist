@@ -36,6 +36,7 @@ namespace aspnet_todolist
 
             builder.Services.AddTransient<DataSeeder>();
             builder.Services.AddScoped<ITodoService, TodoService>();
+            builder.Services.AddScoped<ICategoryService, CategoryService>();
 
             builder.Services.AddOpenApi();
             builder.Services.AddValidation();
@@ -181,9 +182,9 @@ namespace aspnet_todolist
             /// </summary>
             /// <returns>A list of categories.</returns>
             /// <response code="200">Returns the list of categories.</response>
-            app.MapGet("/api/categories", async (TodoDb db) =>
+            app.MapGet("/api/categories", async (ICategoryService categoryService) =>
             {
-                var categories = await db.Categories.ToListAsync();
+                var categories = await categoryService.GetAllAsync();
                 return Results.Ok(categories);
             })
             .WithTags("Categories")
@@ -197,9 +198,9 @@ namespace aspnet_todolist
             /// <returns>The category with the specified id.</returns>
             /// <response code="200">Returns the category.</response>
             /// <response code="404">If the category is not found.</response>
-            app.MapGet("/api/categories/{id}", async (int id, TodoDb db) =>
+            app.MapGet("/api/categories/{id}", async (int id, ICategoryService categoryService) =>
             {
-                var category = await db.Categories.FindAsync(id);
+                var category = await categoryService.GetByIdAsync(id);
                 if (category == null) return Results.NotFound();
 
                 return Results.Ok(category);
@@ -214,12 +215,10 @@ namespace aspnet_todolist
             /// <param name="category">The category to create.</param>
             /// <returns>The newly created category.</returns>
             /// <response code="201">Returns the newly created category.</response>
-            app.MapPost("/api/categories", async (Category category, TodoDb db) =>
+            app.MapPost("/api/categories", async (CategoryCreateDto categoryDto, ICategoryService categoryService) =>
             {
-                db.Categories.Add(category);
-                await db.SaveChangesAsync();
-
-                return Results.Created($"/api/categories/{category.Id}", category);
+                var createdCategory = await categoryService.CreateAsync(categoryDto);
+                return Results.Created($"/api/categories/{createdCategory.Id}", createdCategory);
             })
             .WithTags("Categories")
             .WithSummary("Creates a new category")
@@ -233,17 +232,12 @@ namespace aspnet_todolist
             /// <returns>The updated category.</returns>
             /// <response code="200">Returns the updated category.</response>
             /// <response code="404">If the category is not found.</response>
-            app.MapPut("/api/categories/{id}", async (int id, Category inputCategory, TodoDb db) =>
+            app.MapPut("/api/categories/{id}", async (int id, CategoryUpdateDto categoryDto, ICategoryService categoryService) =>
             {
-                var category = await db.Categories.FindAsync(id);
+                var updatedCategory = await categoryService.UpdateAsync(id, categoryDto);
+                if (updatedCategory == null) return Results.NotFound();
 
-                if (category == null) return Results.NotFound();
-
-                category.Name = inputCategory.Name;
-                category.Color = inputCategory.Color;
-                await db.SaveChangesAsync();
-
-                return Results.Ok(category);
+                return Results.Ok(updatedCategory);
             })
             .WithTags("Categories")
             .WithSummary("Updates an existing category")
@@ -256,14 +250,11 @@ namespace aspnet_todolist
             /// <returns>No content.</returns>
             /// <response code="204">If the category was successfully deleted.</response>
             /// <response code="404">If the category is not found.</response>
-            app.MapDelete("/api/categories/{id}", async (int id, TodoDb db) =>
+            app.MapDelete("/api/categories/{id}", async (int id, ICategoryService categoryService) =>
             {
-                var category = await db.Categories.FindAsync(id);
+                var success = await categoryService.DeleteAsync(id);
+                if (!success) return Results.NotFound();
 
-                if (category == null) return Results.NotFound();
-
-                db.Categories.Remove(category);
-                await db.SaveChangesAsync();
                 return Results.NoContent();
             })
             .WithTags("Categories")
