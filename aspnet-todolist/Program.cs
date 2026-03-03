@@ -328,6 +328,49 @@ namespace aspnet_todolist
             .WithSummary("Deletes a specific category")
             .WithDescription("Removes a category from the list by its unique identifier.");
 
+            if (app.Environment.IsDevelopment())
+            {
+                /// <summary>
+                /// Resets and reseeds the database with sample data.
+                /// </summary>
+                /// <returns>A summary of seeded data.</returns>
+                /// <response code="200">Returns the count of seeded items.</response>
+                app.MapPost("/seed", async (TodoDb db, DataSeeder seeder) =>
+                {
+                    db.Todos.RemoveRange(db.Todos);
+                    db.Categories.RemoveRange(db.Categories);
+                    await db.SaveChangesAsync();
+
+                    var categories = new List<Category>();
+                    for (int i = 0; i < 5; i++)
+                    {
+                        var category = seeder.GenerateCategory();
+                        categories.Add(category);
+                        db.Categories.Add(category);
+                    }
+                    await db.SaveChangesAsync();
+
+                    var todos = new List<Todo>();
+                    for (int i = 0; i < 20; i++)
+                    {
+                        var todo = seeder.GenerateTodo();
+                        todos.Add(todo);
+                        db.Todos.Add(todo);
+                    }
+                    await db.SaveChangesAsync();
+
+                    return Results.Ok(new
+                    {
+                        message = "Database reset and reseeded successfully",
+                        categoriesCreated = categories.Count,
+                        todosCreated = todos.Count
+                    });
+                })
+                .WithTags("Development")
+                .WithSummary("Resets and reseeds the database")
+                .WithDescription("Development only: Clears all existing data and reseeds the database with sample categories and todos.");
+            }
+
             app.Run();
 
 
