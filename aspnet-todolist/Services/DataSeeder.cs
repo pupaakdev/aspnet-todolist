@@ -1,7 +1,7 @@
 ﻿using aspnet_todolist.Models;
 using Bogus;
 
-namespace aspnet_todolist
+namespace aspnet_todolist.Services
 {
     public class DataSeeder
     {
