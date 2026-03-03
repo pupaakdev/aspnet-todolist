@@ -33,7 +33,7 @@ namespace aspnet_todolist.Services
         Task<Todo?> UpdateAsync(int id, Todo inputTodo);
 
         /// <summary>
-        /// Deletes a specific todo item (soft delete by default).
+        /// Deletes a specific todo item.
         /// </summary>
         Task<bool> DeleteAsync(int id, bool hardDelete = false);
     }
