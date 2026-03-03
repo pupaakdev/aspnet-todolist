@@ -1,4 +1,5 @@
-﻿using aspnet_todolist.Models;
+﻿using aspnet_todolist.DTOs;
+using aspnet_todolist.Models;
 
 namespace aspnet_todolist.Services
 {
@@ -20,17 +21,17 @@ namespace aspnet_todolist.Services
         /// <summary>
         /// Retrieves a specific todo item by id.
         /// </summary>
-        Task<Todo?> GetByIdAsync(int id);
+        Task<TodoResponseDto?> GetByIdAsync(int id);
 
         /// <summary>
         /// Creates a new todo item.
         /// </summary>
-        Task<Todo> CreateAsync(Todo todo);
+        Task<TodoResponseDto> CreateAsync(TodoCreateDto todoDto);
 
         /// <summary>
         /// Updates an existing todo item.
         /// </summary>
-        Task<Todo?> UpdateAsync(int id, Todo inputTodo);
+        Task<TodoResponseDto?> UpdateAsync(int id, TodoUpdateDto todoDto);
 
         /// <summary>
         /// Deletes a specific todo item.

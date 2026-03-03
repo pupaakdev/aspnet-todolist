@@ -1,3 +1,4 @@
+using aspnet_todolist.DTOs;
 using aspnet_todolist.Exceptions;
 using aspnet_todolist.Models;
 using aspnet_todolist.Services;
@@ -110,15 +111,15 @@ namespace aspnet_todolist
             /// <summary>
             /// Creates a new todo item.
             /// </summary>
-            /// <param name="todo">The todo item to create.</param>
+            /// <param name="todoDto">The todo item to create.</param>
             /// <returns>The newly created todo item.</returns>
             /// <response code="201">Returns the newly created todo item.</response>
             /// <response code="400">If the provided CategoryId does not exist.</response>
-            app.MapPost("/api/todos", async (Todo todo, ITodoService todoService) =>
+            app.MapPost("/api/todos", async (TodoCreateDto todoDto, ITodoService todoService) =>
             {
                 try
                 {
-                    var createdTodo = await todoService.CreateAsync(todo);
+                    var createdTodo = await todoService.CreateAsync(todoDto);
                     return Results.Created($"/todolist/{createdTodo.Id}", createdTodo);
                 }
                 catch (ArgumentException ex)
@@ -134,16 +135,16 @@ namespace aspnet_todolist
             /// Updates an existing todo item.
             /// </summary>
             /// <param name="id">The id of the todo item to update.</param>
-            /// <param name="inputTodo">The updated todo item data.</param>
+            /// <param name="todoDto">The updated todo item data.</param>
             /// <returns>The updated todo item.</returns>
             /// <response code="200">Returns the updated todo item.</response>
             /// <response code="404">If the todo item is not found.</response>
             /// <response code="400">If the provided CategoryId does not exist.</response>
-            app.MapPut("/api/todos/{id}", async (int id, Todo inputTodo, ITodoService todoService) =>
+            app.MapPut("/api/todos/{id}", async (int id, TodoUpdateDto todoDto, ITodoService todoService) =>
             {
                 try
                 {
-                    var updatedTodo = await todoService.UpdateAsync(id, inputTodo);
+                    var updatedTodo = await todoService.UpdateAsync(id, todoDto);
                     if (updatedTodo == null) return Results.NotFound();
 
                     return Results.Ok(updatedTodo);

@@ -1,4 +1,5 @@
-﻿using aspnet_todolist.Models;
+﻿using aspnet_todolist.DTOs;
+using aspnet_todolist.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace aspnet_todolist.Services
@@ -54,9 +55,9 @@ namespace aspnet_todolist.Services
                 var totalCount = await query.CountAsync();
                 var items = await query.Skip(((int)page - 1) * pageSize).Take(pageSize).ToListAsync();
 
-                var result = new PagedResult<Todo>
+                var result = new PagedResult<TodoResponseDto>
                 {
-                    Items = items,
+                    Items = items.Select(MapToDto),
                     TotalCount = totalCount,
                     CurrentPage = (int)page,
                     PageSize = pageSize
@@ -65,55 +66,57 @@ namespace aspnet_todolist.Services
                 return result;
             }
 
-            return await query.ToListAsync();
+            var todos = await query.ToListAsync();
+            return todos.Select(MapToDto).ToList();
         }
 
-        public async Task<Todo?> GetByIdAsync(int id)
+        public async Task<TodoResponseDto?> GetByIdAsync(int id)
         {
             var todo = await _db.Todos.Include(t => t.Category).FirstOrDefaultAsync(t => t.Id == id);
             if (todo == null) return null;
             if (todo.IsDeleted == true) return null;
 
-            return todo;
+            return MapToDto(todo);
         }
 
-        public async Task<Todo> CreateAsync(Todo todo)
+        public async Task<TodoResponseDto> CreateAsync(TodoCreateDto todoDto)
         {
-            if (todo.CategoryId.HasValue)
+            var categoryExists = await _db.Categories.AnyAsync(c => c.Id == todoDto.CategoryId);
+            if (!categoryExists)
+                throw new ArgumentException("Category does not exist");
+
+            var todo = new Todo
             {
-                var categoryExists = await _db.Categories.AnyAsync(c => c.Id == todo.CategoryId.Value);
-                if (!categoryExists)
-                    throw new ArgumentException("Category does not exist");
-            }
+                Name = todoDto.Name,
+                CategoryId = todoDto.CategoryId,
+                IsComplete = false
+            };
 
             _db.Todos.Add(todo);
             await _db.SaveChangesAsync();
 
-            if (todo.CategoryId.HasValue)
-            {
-                await _db.Entry(todo).Reference(t => t.Category).LoadAsync();
-            }
+            await _db.Entry(todo).Reference(t => t.Category).LoadAsync();
 
-            return todo;
+            return MapToDto(todo);
         }
 
-        public async Task<Todo?> UpdateAsync(int id, Todo inputTodo)
+        public async Task<TodoResponseDto?> UpdateAsync(int id, TodoUpdateDto todoDto)
         {
             var todo = await _db.Todos.FindAsync(id);
 
             if (todo == null) return null;
             if (todo.IsDeleted == true) return null;
 
-            if (inputTodo.CategoryId.HasValue)
+            if (todoDto.CategoryId.HasValue)
             {
-                var categoryExists = await _db.Categories.AnyAsync(c => c.Id == inputTodo.CategoryId.Value);
+                var categoryExists = await _db.Categories.AnyAsync(c => c.Id == todoDto.CategoryId.Value);
                 if (!categoryExists)
                     throw new ArgumentException("Category does not exist");
             }
 
-            todo.Name = inputTodo.Name;
-            todo.IsComplete = inputTodo.IsComplete;
-            todo.CategoryId = inputTodo.CategoryId;
+            todo.Name = todoDto.Name;
+            todo.IsComplete = todoDto.IsComplete;
+            todo.CategoryId = todoDto.CategoryId;
             await _db.SaveChangesAsync();
 
             if (todo.CategoryId.HasValue)
@@ -121,7 +124,7 @@ namespace aspnet_todolist.Services
                 await _db.Entry(todo).Reference(t => t.Category).LoadAsync();
             }
 
-            return todo;
+            return MapToDto(todo);
         }
 
         public async Task<bool> DeleteAsync(int id, bool hardDelete = false)
@@ -138,6 +141,19 @@ namespace aspnet_todolist.Services
 
             await _db.SaveChangesAsync();
             return true;
+        }
+
+        private static TodoResponseDto MapToDto(Todo todo)
+        {
+            return new TodoResponseDto(
+                todo.Id,
+                todo.Name!,
+                todo.IsComplete,
+                todo.Category != null ? new CategoryResponseDto(
+                    todo.Category.Id,
+                    todo.Category.Name!,
+                    todo.Category.Color!) : null
+            );
         }
     }
 }
