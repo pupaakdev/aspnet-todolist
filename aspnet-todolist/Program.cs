@@ -342,7 +342,7 @@ namespace aspnet_todolist
                     await db.SaveChangesAsync();
 
                     var categories = new List<Category>();
-                    for (int i = 0; i < 5; i++)
+                    for (int i = 0; i < 20; i++)
                     {
                         var category = seeder.GenerateCategory();
                         categories.Add(category);
@@ -351,7 +351,7 @@ namespace aspnet_todolist
                     await db.SaveChangesAsync();
 
                     var todos = new List<Todo>();
-                    for (int i = 0; i < 20; i++)
+                    for (int i = 0; i < 500; i++)
                     {
                         var todo = seeder.GenerateTodo();
                         todos.Add(todo);
