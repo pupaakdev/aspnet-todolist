@@ -32,6 +32,8 @@ namespace aspnet_todolist
                 opt.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
             builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
+            builder.Services.AddTransient<DataSeeder>();
+
             builder.Services.AddOpenApi();
             builder.Services.AddValidation();
 
@@ -327,6 +329,8 @@ namespace aspnet_todolist
             .WithDescription("Removes a category from the list by its unique identifier.");
 
             app.Run();
+
+
         }
     }
 }
