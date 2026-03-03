@@ -21,6 +21,7 @@ namespace aspnet_todolist
 
             todoModelFake = new Faker<Todo>()
                 .RuleFor(u => u.Name, f => f.Lorem.Word())
+                .RuleFor(u => u.IsComplete, f => f.Random.Bool())
                 .RuleFor(u => u.CategoryId, f =>
                 {
                     var categoryIds = _db.Categories.Select(c => c.Id).ToList();
