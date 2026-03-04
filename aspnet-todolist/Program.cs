@@ -85,7 +85,9 @@ namespace aspnet_todolist
                     showDeleted,
                     sortOrder);
 
-                return Results.Ok(result);
+                if (result.IsFailed) return Results.BadRequest(result.Errors.Select(e => e.Message));
+
+                return Results.Ok(result.Value);
             })
             .WithTags("Todos")
             .WithSummary("Retrieves all todo items")
@@ -100,10 +102,10 @@ namespace aspnet_todolist
             /// <response code="404">If the todo item is not found.</response>
             app.MapGet("/api/todos/{id}", async (int id, ITodoService todoService) =>
             {
-                var todo = await todoService.GetByIdAsync(id);
-                if (todo == null) return Results.NotFound();
+                var result = await todoService.GetByIdAsync(id);
+                if (result.IsFailed) return Results.NotFound(result.Errors.Select(e => e.Message));
 
-                return Results.Ok(todo);
+                return Results.Ok(result.Value);
             })
             .WithTags("Todos")
             .WithSummary("Retrieves a specific todo item")
@@ -118,15 +120,10 @@ namespace aspnet_todolist
             /// <response code="400">If the provided CategoryId does not exist.</response>
             app.MapPost("/api/todos", async (TodoCreateDto todoDto, ITodoService todoService) =>
             {
-                try
-                {
-                    var createdTodo = await todoService.CreateAsync(todoDto);
-                    return Results.Created($"/todolist/{createdTodo.Id}", createdTodo);
-                }
-                catch (ArgumentException ex)
-                {
-                    return Results.BadRequest(ex.Message);
-                }
+                var result = await todoService.CreateAsync(todoDto);
+                if (result.IsFailed) return Results.BadRequest(result.Errors.Select(e => e.Message));
+
+                return Results.Created($"/todolist/{result.Value.Id}", result.Value);
             })
             .WithTags("Todos")
             .WithSummary("Creates a new todo item")
@@ -143,17 +140,16 @@ namespace aspnet_todolist
             /// <response code="400">If the provided CategoryId does not exist.</response>
             app.MapPut("/api/todos/{id}", async (int id, TodoUpdateDto todoDto, ITodoService todoService) =>
             {
-                try
+                var result = await todoService.UpdateAsync(id, todoDto);
+                if(result.IsFailed)
                 {
-                    var updatedTodo = await todoService.UpdateAsync(id, todoDto);
-                    if (updatedTodo == null) return Results.NotFound();
+                    var firstError = result.Errors.First().Message;
+                    return firstError.Contains("not found")
+                        ? Results.NotFound(result.Errors.Select(e => e.Message))
+                        : Results.BadRequest(result.Errors.Select(e => e.Message));
+                }
 
-                    return Results.Ok(updatedTodo);
-                }
-                catch (ArgumentException ex)
-                {
-                    return Results.BadRequest(ex.Message);
-                }
+                return Results.Ok(result.Value);
             })
             .WithTags("Todos")
             .WithSummary("Updates an existing todo item")
@@ -168,8 +164,8 @@ namespace aspnet_todolist
             /// <response code="404">If the todo item is not found.</response>
             app.MapDelete("/api/todos/{id}", async (int id, ITodoService todoService, bool hardDelete = false) =>
             {
-                var success = await todoService.DeleteAsync(id, hardDelete);
-                if (!success) return Results.NotFound();
+                var result = await todoService.DeleteAsync(id, hardDelete);
+                if (result.IsFailed) return Results.NotFound(result.Errors.Select(e => e.Message));
 
                 return Results.NoContent();
             })

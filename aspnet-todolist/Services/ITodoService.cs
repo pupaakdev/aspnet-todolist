@@ -1,5 +1,6 @@
 ﻿using aspnet_todolist.DTOs;
 using aspnet_todolist.Models;
+using FluentResults;
 
 namespace aspnet_todolist.Services
 {
@@ -8,7 +9,7 @@ namespace aspnet_todolist.Services
         /// <summary>
         /// Retrieves all todo items with optional filtering, sorting, and pagination.
         /// </summary>
-        Task<object> GetAllAsync(
+        Task<Result<object>> GetAllAsync(
             bool? isComplete = null,
             bool? isDeleted = null,
             string? search = null,
@@ -21,21 +22,21 @@ namespace aspnet_todolist.Services
         /// <summary>
         /// Retrieves a specific todo item by id.
         /// </summary>
-        Task<TodoResponseDto?> GetByIdAsync(int id);
+        Task<Result<TodoResponseDto>> GetByIdAsync(int id);
 
         /// <summary>
         /// Creates a new todo item.
         /// </summary>
-        Task<TodoResponseDto> CreateAsync(TodoCreateDto todoDto);
+        Task<Result<TodoResponseDto>> CreateAsync(TodoCreateDto todoDto);
 
         /// <summary>
         /// Updates an existing todo item.
         /// </summary>
-        Task<TodoResponseDto?> UpdateAsync(int id, TodoUpdateDto todoDto);
+        Task<Result<TodoResponseDto>> UpdateAsync(int id, TodoUpdateDto todoDto);
 
         /// <summary>
         /// Deletes a specific todo item.
         /// </summary>
-        Task<bool> DeleteAsync(int id, bool hardDelete = false);
+        Task<Result<bool>> DeleteAsync(int id, bool hardDelete = false);
     }
 }
