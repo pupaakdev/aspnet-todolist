@@ -180,8 +180,10 @@ namespace aspnet_todolist
             /// <response code="200">Returns the list of categories.</response>
             app.MapGet("/api/categories", async (ICategoryService categoryService) =>
             {
-                var categories = await categoryService.GetAllAsync();
-                return Results.Ok(categories);
+                var result = await categoryService.GetAllAsync();
+                if (result.IsFailed) return Results.BadRequest(result.Errors.Select(e => e.Message));
+
+                return Results.Ok(result.Value);
             })
             .WithTags("Categories")
             .WithSummary("Retrieves all categories")
@@ -196,10 +198,10 @@ namespace aspnet_todolist
             /// <response code="404">If the category is not found.</response>
             app.MapGet("/api/categories/{id}", async (int id, ICategoryService categoryService) =>
             {
-                var category = await categoryService.GetByIdAsync(id);
-                if (category == null) return Results.NotFound();
+                var result = await categoryService.GetByIdAsync(id);
+                if (result.IsFailed) return Results.NotFound(result.Errors.Select(e => e.Message));
 
-                return Results.Ok(category);
+                return Results.Ok(result.Value);
             })
             .WithTags("Categories")
             .WithSummary("Retrieves a specific category")
@@ -213,8 +215,10 @@ namespace aspnet_todolist
             /// <response code="201">Returns the newly created category.</response>
             app.MapPost("/api/categories", async (CategoryCreateDto categoryDto, ICategoryService categoryService) =>
             {
-                var createdCategory = await categoryService.CreateAsync(categoryDto);
-                return Results.Created($"/api/categories/{createdCategory.Id}", createdCategory);
+                var result = await categoryService.CreateAsync(categoryDto);
+                if (result.IsFailed) return Results.BadRequest(result.Errors.Select(e => e.Message));
+
+                return Results.Created($"/api/categories/{result.Value.Id}", result.Value);
             })
             .WithTags("Categories")
             .WithSummary("Creates a new category")
@@ -230,10 +234,10 @@ namespace aspnet_todolist
             /// <response code="404">If the category is not found.</response>
             app.MapPut("/api/categories/{id}", async (int id, CategoryUpdateDto categoryDto, ICategoryService categoryService) =>
             {
-                var updatedCategory = await categoryService.UpdateAsync(id, categoryDto);
-                if (updatedCategory == null) return Results.NotFound();
+                var result = await categoryService.UpdateAsync(id, categoryDto);
+                if (result.IsFailed) return Results.NotFound(result.Errors.Select(e => e.Message));
 
-                return Results.Ok(updatedCategory);
+                return Results.Ok(result.Value);
             })
             .WithTags("Categories")
             .WithSummary("Updates an existing category")
@@ -248,8 +252,8 @@ namespace aspnet_todolist
             /// <response code="404">If the category is not found.</response>
             app.MapDelete("/api/categories/{id}", async (int id, ICategoryService categoryService) =>
             {
-                var success = await categoryService.DeleteAsync(id);
-                if (!success) return Results.NotFound();
+                var result = await categoryService.DeleteAsync(id);
+                if (result.IsFailed) return Results.NotFound(result.Errors.Select(e => e.Message));
 
                 return Results.NoContent();
             })
