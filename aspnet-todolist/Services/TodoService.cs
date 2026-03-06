@@ -1,5 +1,6 @@
 ﻿using aspnet_todolist.DTOs;
 using aspnet_todolist.Models;
+using FluentResults;
 using Microsoft.EntityFrameworkCore;
 
 namespace aspnet_todolist.Services
@@ -13,7 +14,7 @@ namespace aspnet_todolist.Services
             _db = db;
         }
 
-        public async Task<object> GetAllAsync(
+        public async Task<Result<object>> GetAllAsync(
             bool? isComplete = null,
             bool? isDeleted = null,
             string? search = null,
@@ -67,23 +68,23 @@ namespace aspnet_todolist.Services
             }
 
             var todos = await query.ToListAsync();
-            return todos.Select(MapToDto).ToList();
+            return Result.Ok<object>(todos.Select(MapToDto).ToList());
         }
 
-        public async Task<TodoResponseDto?> GetByIdAsync(int id)
+        public async Task<Result<TodoResponseDto>> GetByIdAsync(int id)
         {
             var todo = await _db.Todos.Include(t => t.Category).FirstOrDefaultAsync(t => t.Id == id);
-            if (todo == null) return null;
-            if (todo.IsDeleted == true) return null;
+            if (todo == null) return Result.Fail("Todo not found");
+            if (todo.IsDeleted == true) return Result.Fail("Todo not found");
 
-            return MapToDto(todo);
+            return Result.Ok(MapToDto(todo));
         }
 
-        public async Task<TodoResponseDto> CreateAsync(TodoCreateDto todoDto)
+        public async Task<Result<TodoResponseDto>> CreateAsync(TodoCreateDto todoDto)
         {
             var categoryExists = await _db.Categories.AnyAsync(c => c.Id == todoDto.CategoryId);
             if (!categoryExists)
-                throw new ArgumentException("Category does not exist");
+                return Result.Fail("Category does not exist");
 
             var todo = new Todo
             {
@@ -97,21 +98,21 @@ namespace aspnet_todolist.Services
 
             await _db.Entry(todo).Reference(t => t.Category).LoadAsync();
 
-            return MapToDto(todo);
+            return Result.Ok(MapToDto(todo));
         }
 
-        public async Task<TodoResponseDto?> UpdateAsync(int id, TodoUpdateDto todoDto)
+        public async Task<Result<TodoResponseDto>> UpdateAsync(int id, TodoUpdateDto todoDto)
         {
             var todo = await _db.Todos.FindAsync(id);
 
-            if (todo == null) return null;
-            if (todo.IsDeleted == true) return null;
+            if (todo == null) return Result.Fail("Todo not found");
+            if (todo.IsDeleted == true) return Result.Fail("Todo not found");
 
             if (todoDto.CategoryId.HasValue)
             {
                 var categoryExists = await _db.Categories.AnyAsync(c => c.Id == todoDto.CategoryId.Value);
                 if (!categoryExists)
-                    throw new ArgumentException("Category does not exist");
+                    return Result.Fail("Category does not exist");
             }
 
             todo.Name = todoDto.Name;
@@ -124,15 +125,15 @@ namespace aspnet_todolist.Services
                 await _db.Entry(todo).Reference(t => t.Category).LoadAsync();
             }
 
-            return MapToDto(todo);
+            return Result.Ok(MapToDto(todo));
         }
 
-        public async Task<bool> DeleteAsync(int id, bool hardDelete = false)
+        public async Task<Result<bool>> DeleteAsync(int id, bool hardDelete = false)
         {
             var todo = await _db.Todos.FindAsync(id);
 
-            if (todo == null) return false;
-            if (todo.IsDeleted == true && !hardDelete) return false;
+            if (todo == null) return Result.Fail("Todo not found");
+            if (todo.IsDeleted == true && !hardDelete) return Result.Fail("Todo not found");
 
             if (hardDelete)
                 _db.Todos.Remove(todo);
@@ -140,7 +141,7 @@ namespace aspnet_todolist.Services
                 todo.IsDeleted = true;
 
             await _db.SaveChangesAsync();
-            return true;
+            return Result.Ok();
         }
 
         private static TodoResponseDto MapToDto(Todo todo)

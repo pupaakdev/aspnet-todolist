@@ -1,4 +1,5 @@
 using aspnet_todolist.DTOs;
+using FluentResults;
 
 namespace aspnet_todolist.Services
 {
@@ -7,26 +8,26 @@ namespace aspnet_todolist.Services
         /// <summary>
         /// Retrieves all categories.
         /// </summary>
-        Task<List<CategoryResponseDto>> GetAllAsync();
+        Task<Result<List<CategoryResponseDto>>> GetAllAsync();
 
         /// <summary>
         /// Retrieves a specific category by id.
         /// </summary>
-        Task<CategoryResponseDto?> GetByIdAsync(int id);
+        Task<Result<CategoryResponseDto>> GetByIdAsync(int id);
 
         /// <summary>
         /// Creates a new category.
         /// </summary>
-        Task<CategoryResponseDto> CreateAsync(CategoryCreateDto categoryDto);
+        Task<Result<CategoryResponseDto>> CreateAsync(CategoryCreateDto categoryDto);
 
         /// <summary>
         /// Updates an existing category.
         /// </summary>
-        Task<CategoryResponseDto?> UpdateAsync(int id, CategoryUpdateDto categoryDto);
+        Task<Result<CategoryResponseDto>> UpdateAsync(int id, CategoryUpdateDto categoryDto);
 
         /// <summary>
         /// Deletes a specific category.
         /// </summary>
-        Task<bool> DeleteAsync(int id);
+        Task<Result<bool>> DeleteAsync(int id);
     }
 }
