@@ -1,3 +1,4 @@
 <Solution>
+  <Project Path="aspnet-todolist.Tests/aspnet-todolist.Tests.csproj" Id="1d15ca6d-67da-4484-8013-8d9c4e04a401" />
   <Project Path="aspnet-todolist/aspnet-todolist.csproj" />
 </Solution>
